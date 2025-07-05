@@ -1,10 +1,11 @@
+from pathlib import Path
 from typing import List, Union
 
 from dotenv import load_dotenv
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
+BASE_DIR = Path(__file__).parent.parent
 
 
 class DBSettings(BaseSettings):
@@ -19,6 +20,14 @@ class DBSettings(BaseSettings):
         return (f"postgresql+asyncpg://"
                 f"{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
                 f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}")
+
+
+class AuthSettings(BaseSettings):
+    PRIVATE_KEY_PATH: Path = BASE_DIR / "certs" / "jwt-private.pem"
+    PUBLIC_KEY_PATH: Path = BASE_DIR / "certs" / "jwt-public.pem"
+    ALGORITHM: str = "RS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
 
 class Settings(BaseSettings):
@@ -41,8 +50,9 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     db: DBSettings = DBSettings()
+    auth: AuthSettings = AuthSettings()
 
-    model_config = SettingsConfigDict(env_file=".env", extra="allow")
+    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
 
 
 settings = Settings()
