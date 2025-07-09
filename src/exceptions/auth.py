@@ -5,6 +5,10 @@ class AuthError(AppError):
     """Ошибка аутентификации / авторизации"""
 
 
+class LogoutError(AuthError):
+    """Общая ошибка при логауте"""
+
+
 class TokenCreationError(AuthError):
     """Не удалось создать JWT токен"""
 

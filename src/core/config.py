@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent.parent.parent
+
+load_dotenv()
 
 
 class DBSettings(BaseSettings):
@@ -52,7 +54,7 @@ class Settings(BaseSettings):
     db: DBSettings = DBSettings()
     auth: AuthSettings = AuthSettings()
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
 
 settings = Settings()

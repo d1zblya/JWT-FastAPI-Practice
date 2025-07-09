@@ -11,6 +11,8 @@ from src.core.config import settings
 from src.database.session import Base
 
 sys.path.insert(0, dirname(dirname(dirname(abspath(__file__)))))
+from src.users.models import UserModel, BusinessProfileModel
+from src.auth.models import RefreshTokenModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

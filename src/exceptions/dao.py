@@ -19,3 +19,7 @@ class CannotDeleteError(DAOError):
 
 class NotFoundError(DAOError):
     """Запись не найдена в БД"""
+
+
+class AlreadyExistsError(DAOError):
+    """Запись уже существует"""
