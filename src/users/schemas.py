@@ -1,11 +1,13 @@
+import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
+
+from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
 
 
 ###############
-# User Models #
+# User Schemas #
 ###############
 
 class UserRole(str, Enum):
@@ -20,7 +22,27 @@ class UserBase(BaseModel):
     first_name: str | None = Field(default=None, description="Имя пользователя", max_length=50)
     last_name: str | None = Field(default=None, description="Фамилия пользователя", max_length=50)
     phone: str | None = Field(default=None, description="Номер телефона", max_length=20)
-    role: UserRole = Field(..., description="Роль пользователя")
+    role: UserRole = Field(default=UserRole.USER.value, description="Роль пользователя")
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if v is not None:
+            # Простая валидация для международного формата
+            if not re.match(r'^\+?[1-9]\d{1,14}$', v):
+                raise ValueError('Некорректный формат телефона')
+        return v
+
+    @field_validator('first_name', 'last_name')
+    @classmethod
+    def validate_names(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+            if not re.match(r'^[a-zA-Zа-яА-Я\s\-\']+$', v):
+                raise ValueError('Имя может содержать только буквы, пробелы, дефисы и апострофы')
+        return v
 
 
 # Модель для создания (регистрация)
@@ -29,9 +51,17 @@ class UserCreate(UserBase):
     password: str = Field(
         ...,
         min_length=8,
-        regex=r"^(?=.*[A-Za-z])(?=.*\d).+$",
+        max_length=128,
+        # pattern=r"^[a-zA-Zа-яА-Я\s\-\']+$",
         description="Пароль (минимум 8 символов)"
     )
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        if not re.match(r"^(?=.*[A-Za-z])(?=.*\d).+$", v):
+            raise ValueError("Пароль должен содержать как минимум одну букву и одну цифру (не менее 8 символов)")
+        return v
 
 
 # Модель для обновления (все поля опциональны)
@@ -45,9 +75,23 @@ class UserUpdate(BaseModel):
     password: str | None = Field(
         None,
         min_length=8,
-        regex=r"^(?=.*[A-Za-z])(?=.*\d).+$",
+        # pattern=r"^[a-zA-Zа-яА-Я\s\-\']+$",
         description="Новый пароль"
     )
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        if not re.match(r"^(?=.*[A-Za-z])(?=.*\d).+$", v):
+            raise ValueError("Пароль должен содержать как минимум одну букву и одну цифру (не менее 8 символов)")
+        return v
+
+
+# Модкль для логина пользователя
+class UserLogin(BaseModel):
+    """Схема для логина (аутентификации)"""
+    email: EmailStr = Field(..., description="Электронная почта", example="user@example.com")
+    password: str = Field(..., description="Пароль")
 
 
 # Модель вывода (ответ клиенту)
@@ -60,6 +104,13 @@ class UserOut(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+# Модель для работы с JWT
+class UserJWTData(BaseModel):
+    """Модель для работы с JWT (создание refresh и access токенов)"""
+    id: str
+    role: UserRole
+
+
 # Внутренняя модель (включает хэш пароля)
 class UserInDB(UserOut):
     """Внутренняя модель, используемая внутри сервиса/репозитория/ORM, но не отдаётся клиенту"""
@@ -67,9 +118,9 @@ class UserInDB(UserOut):
 
     model_config = ConfigDict(from_attributes=True)
 
+    def to_public(self) -> UserOut:
+        return UserOut.model_validate(self)
 
-###################
-# Business Models #
-###################
-
-
+####################
+# Business Schemas #
+####################
