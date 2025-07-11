@@ -104,11 +104,17 @@ class UserOut(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Модель для работы с JWT
-class UserJWTData(BaseModel):
-    """Модель для работы с JWT (создание refresh и access токенов)"""
+# Модель для работы с JWT access
+class UserJWTAccessData(BaseModel):
+    """Модель для работы с JWT (создание access токена)"""
     id: str
     role: UserRole
+
+
+# Модель для работы с JWT refresh
+class UserJWTRefreshData(BaseModel):
+    """Модель для работы с JWT (создание refresh токена)"""
+    id: str
 
 
 # Внутренняя модель (включает хэш пароля)
