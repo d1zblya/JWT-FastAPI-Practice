@@ -3,18 +3,21 @@ from datetime import timedelta, datetime, timezone
 from typing import Dict, Any
 
 import jwt
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Response
+from fastapi.security import OAuth2PasswordRequestForm
 
 from src.auth import utils as auth_utils
 from src.auth.dao import RefreshTokenDAO
-from src.auth.schemas import TokenFields, TokenTypes, RefreshTokenSchema
+from src.auth.schemas import TokenFields, TokenTypes, RefreshTokenSchema, TokenResponse, TokensInfo
 from src.core.config import settings
 from src.database.session import async_session_maker
-from src.exceptions.token import CannotFindToken, CannotAddRefreshToken
-from src.users.schemas import UserJWTData
+from src.exceptions.token import CannotAddRefreshToken, CannotFindRefreshToken, CannotDeleteRefreshToken
+from src.exceptions.user import UserAlreadyExists, UserNotFound, InvalidPasswordOrUsername
+from src.users.schemas import UserJWTRefreshData, UserJWTAccessData, UserCreate, UserRole
+from src.users.service import UserService
 
 
-class AuthService:
+class TokenService:
     @classmethod
     def create_jwt(
             cls,
@@ -34,7 +37,7 @@ class AuthService:
         )
 
     @classmethod
-    async def create_access_token(cls, user: UserJWTData) -> str:
+    async def create_access_token(cls, user: UserJWTAccessData) -> str:
         """Создание access токена"""
         jwt_payload = {
             TokenFields.TOKEN_SUB_FIELD.value: user.id,
@@ -47,7 +50,7 @@ class AuthService:
         )
 
     @classmethod
-    async def create_refresh_token(cls, user: UserJWTData) -> str:
+    async def create_refresh_token(cls, user: UserJWTRefreshData) -> str:
         """Создание refresh токена"""
         jwt_payload = {
             TokenFields.TOKEN_SUB_FIELD.value: user.id,
@@ -66,10 +69,25 @@ class AuthService:
                 jti=jti,
                 token=token,
                 expires_at=datetime.now(timezone.utc) + timedelta(days=settings.auth.REFRESH_TOKEN_EXPIRE_DAYS),
-                user_id=user.id
+                user_id=uuid.UUID(user.id)
             )
         )
         return token
+
+    @classmethod
+    async def create_pair_tokens(cls, user_id: str, user_role: UserRole) -> TokensInfo:
+        access_token = await cls.create_access_token(
+            UserJWTAccessData(
+                id=str(user_id),
+                role=user_role,
+            )
+        )
+        refresh_token = await cls.create_refresh_token(
+            UserJWTRefreshData(
+                id=str(user_id),
+            )
+        )
+        return TokensInfo(access_token=access_token, refresh_token=refresh_token)
 
     @classmethod
     async def verify_token(cls, token: str,
@@ -94,7 +112,7 @@ class AuthService:
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Refresh token has been revoked"
                         )
-                    if token_record.expires_at < datetime.utcnow():
+                    if token_record.expires_at < datetime.now(timezone.utc):
                         await RefreshTokenDAO.delete(session=session, jti=jti)
                         await session.commit()
                         raise HTTPException(
@@ -116,20 +134,113 @@ class AuthService:
             )
 
 
+class AuthService:
+    @classmethod
+    async def register(cls, user: UserCreate) -> dict | None:
+        try:
+            await UserService.create_user(user)
+            return {"message": "User created successfully"}
+        except UserAlreadyExists:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already exists"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Registration failed"
+            )
+
+    @classmethod
+    async def login(cls, user: OAuth2PasswordRequestForm, response: Response) -> TokenResponse:
+        try:
+            user_db = await UserService.authenticate_user(email=user.username,
+                                                          password=user.password)  # username = email
+        except UserNotFound:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        except InvalidPasswordOrUsername:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        tokens_pair = await TokenService.create_pair_tokens(user_id=str(user_db.id), user_role=user_db.role)
+
+        response.set_cookie(
+            key="refresh_token",
+            value=tokens_pair.refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            max_age=settings.auth.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+        )
+
+        return TokenResponse(access_token=tokens_pair.access_token)
+
+    @classmethod
+    async def refresh(cls, refresh_token: str) -> TokenResponse:
+        payload = await TokenService.verify_token(
+            token=refresh_token,
+            expected_type=TokenTypes.REFRESH_TOKEN_TYPE
+        )
+
+        user_id = payload.get("sub")
+        # user_role = payload.get("role")
+
+        user_db = await UserService.get_user(uuid.UUID(user_id))
+
+        if user_db is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token payload"
+            )
+
+        user_jwt_data = UserJWTAccessData(id=user_id, role=UserRole(user_db.role))
+        access_token = await TokenService.create_access_token(user_jwt_data)
+
+        return TokenResponse(access_token=access_token)
+
+    @classmethod
+    async def logout(cls, refresh_token: str, response: Response) -> dict:
+        try:
+            payload = await TokenService.verify_token(refresh_token, TokenTypes.REFRESH_TOKEN_TYPE.value)
+            jti = uuid.UUID(payload.get(TokenFields.TOKEN_JTI_FIELD.value))
+            token = await RefreshTokenService.get_refresh_token_by_jti(jti)
+            if jti and token:
+                await RefreshTokenService.delete_refresh_token(jti)
+        except (ValueError, jwt.PyJWTError) as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token format"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        response.delete_cookie(
+            key="refresh_token",
+            httponly=True,
+            secure=True,
+            samesite="strict"
+        )
+        return {"message": "Logged out successfully"}
+
+
 class RefreshTokenService:
     @staticmethod
     async def get_refresh_token_by_jti(jti: uuid.UUID) -> RefreshTokenSchema:
         async with async_session_maker() as session:
-            try:
-                token = await RefreshTokenDAO.find_one_or_none(session=session, jti=jti)
-                if token is None:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="JWT token not found"
-                    )
-                return token
-            except Exception as e:
-                raise CannotFindToken(f"Cannot find token: {e}")
+            token = await RefreshTokenDAO.find_one_or_none(session=session, jti=jti)
+            if token is None:
+                raise CannotFindRefreshToken(f"Cannot find token")
+            return token
 
     @staticmethod
     async def add_refresh_token(token_data: RefreshTokenSchema) -> RefreshTokenSchema:
@@ -148,4 +259,4 @@ class RefreshTokenService:
                 await RefreshTokenDAO.delete(session=session, jti=jti)
                 await session.commit()
             except Exception as e:
-                pass
+                raise CannotDeleteRefreshToken(f"Cannot delete refreash token: {e}")

@@ -47,16 +47,12 @@ def decode_jwt(
         public_key: str = settings.auth.PUBLIC_KEY_PATH.read_text(),
         algorithm: str = settings.auth.ALGORITHM,
 ) -> dict:
-    try:
-        decoded = jwt.decode(
-            token,
-            public_key,
-            algorithms=[algorithm],
-        )
-        return decoded
-    except jwt.exceptions.InvalidTokenError as e:
-        print("JWT decode error:", e)
-        raise
+    decoded = jwt.decode(
+        token,
+        public_key,
+        algorithms=[algorithm],
+    )
+    return decoded
 
 
 def hash_password(password: str) -> str:
