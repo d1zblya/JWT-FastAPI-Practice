@@ -9,5 +9,9 @@ class CannotDeleteToken(CannotDeleteError):
     pass
 
 
-class CannotFindToken(CannotAddError):
+class CannotFindRefreshToken(CannotAddError):
+    pass
+
+
+class CannotDeleteRefreshToken(CannotDeleteError):
     pass

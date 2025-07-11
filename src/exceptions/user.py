@@ -1,4 +1,5 @@
-from src.exceptions.dao import AlreadyExistsError, NotFoundError
+from src.exceptions.dao import AlreadyExistsError, NotFoundError, CannotUpdateError, CannotDeleteError, \
+    InvalidCredentialsError
 
 
 class UserAlreadyExists(AlreadyExistsError):
@@ -6,4 +7,16 @@ class UserAlreadyExists(AlreadyExistsError):
 
 
 class UserNotFound(NotFoundError):
+    pass
+
+
+class UserCannotUpdate(CannotUpdateError):
+    pass
+
+
+class UserCannotDelete(CannotDeleteError):
+    pass
+
+
+class InvalidPasswordOrUsername(InvalidCredentialsError):
     pass

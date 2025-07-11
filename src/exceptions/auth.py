@@ -17,9 +17,13 @@ class TokenVerificationError(AuthError):
     """Не удалось проверить JWT токен"""
 
 
-class AccessTokenExpiredError(TokenVerificationError):
-    """Access токен просрочен или отозван"""
+class TokenExpiredError(TokenVerificationError):
+    """Токен просрочен"""
 
 
-class RefreshTokenExpiredError(TokenVerificationError):
-    """Refresh токен просрочен или отозван"""
+class TokenRevokedError(TokenVerificationError):
+    """Токен отозван"""
+
+
+class InvalidTokenError(TokenVerificationError):
+    """Не соответствие типа токена"""

@@ -23,3 +23,7 @@ class NotFoundError(DAOError):
 
 class AlreadyExistsError(DAOError):
     """Запись уже существует"""
+
+
+class InvalidCredentialsError(DAOError):
+    """Неверные данные"""
