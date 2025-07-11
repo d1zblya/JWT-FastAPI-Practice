@@ -17,10 +17,34 @@ async_session_maker = async_sessionmaker(
 )
 
 
+async def get_async_session() -> AsyncSession:
+    """
+    Получить асинхронную сессию базы данных.
+
+    Yields:
+        AsyncSession: Сессия базы данных
+    """
+    async with async_session_maker() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
 class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
 
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, server_default=func.now(), onupdate=func.now()
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )

@@ -12,7 +12,7 @@ load_dotenv()
 
 class DBSettings(BaseSettings):
     POSTGRES_HOST: str
-    POSTGRES_PORT: int
+    POSTGRES_PORT: int = 5432
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -31,10 +31,18 @@ class AuthSettings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
+    @property
+    def private_key(self) -> str:
+        """Получить приватный ключ"""
+        return self.PRIVATE_KEY_PATH.read_text()
+
+    @property
+    def public_key(self) -> str:
+        """Получить публичный ключ"""
+        return self.PUBLIC_KEY_PATH.read_text()
+
 
 class Settings(BaseSettings):
-    BOT_TOKEN: str
-
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
         "http://localhost:3000",
         "http://localhost:8001",
@@ -49,7 +57,7 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, (list, str)):
             return v
-        raise ValueError(v)
+        raise ValueError(f"Invalid CORS origins format: {v}")
 
     db: DBSettings = DBSettings()
     auth: AuthSettings = AuthSettings()
