@@ -24,6 +24,11 @@ class TokenTypes(str, Enum):
     REFRESH_TOKEN_TYPE = "refresh"
 
 
+class TokensInfo(BaseModel):
+    access_token: str = Field(...)
+    refresh_token: str = Field(...)
+
+
 class RefreshTokenSchema(BaseModel):
     jti: uuid.UUID = Field(...)
     token: str = Field(...)
