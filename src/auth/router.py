@@ -9,7 +9,7 @@ from src.users.schemas import UserCreate
 
 router = APIRouter(
     prefix="/api/auth",
-    tags=["Auth"],
+    tags=["auth"],
 )
 
 
@@ -39,7 +39,7 @@ async def refresh_access_token(refresh_token: str = Cookie(None)) -> TokenRespon
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout_user(response: Response, refresh_token: str = Cookie(None)):
-    if refresh_token:
+    if refresh_token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token not provided"

@@ -191,7 +191,7 @@ class AuthService:
         user_id = payload.get("sub")
         # user_role = payload.get("role")
 
-        user_db = await UserService.get_user(uuid.UUID(user_id))
+        user_db = await UserService.get_user_by_user_id(uuid.UUID(user_id))
 
         if user_db is None:
             raise HTTPException(
@@ -205,9 +205,9 @@ class AuthService:
         return TokenResponse(access_token=access_token)
 
     @classmethod
-    async def logout(cls, refresh_token: str, response: Response) -> dict:
+    async def logout(cls, refresh_token: str, response: Response):
         try:
-            payload = await TokenService.verify_token(refresh_token, TokenTypes.REFRESH_TOKEN_TYPE.value)
+            payload = await TokenService.verify_token(refresh_token, TokenTypes.REFRESH_TOKEN_TYPE)
             jti = uuid.UUID(payload.get(TokenFields.TOKEN_JTI_FIELD.value))
             token = await RefreshTokenService.get_refresh_token_by_jti(jti)
             if jti and token:
@@ -230,7 +230,6 @@ class AuthService:
             secure=True,
             samesite="strict"
         )
-        return {"message": "Logged out successfully"}
 
 
 class RefreshTokenService:

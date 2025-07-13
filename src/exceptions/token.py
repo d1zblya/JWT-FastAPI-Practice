@@ -1,4 +1,4 @@
-from src.exceptions.dao import CannotUpdateError, CannotDeleteError, NotFoundError, CannotAddError
+from src.exceptions.dao import CannotDeleteError, NotFoundError, CannotAddError
 
 
 class CannotAddRefreshToken(CannotAddError):
@@ -9,7 +9,7 @@ class CannotDeleteToken(CannotDeleteError):
     pass
 
 
-class CannotFindRefreshToken(CannotAddError):
+class CannotFindRefreshToken(NotFoundError):
     pass
 
 

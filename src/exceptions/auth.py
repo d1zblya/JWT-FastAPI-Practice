@@ -27,3 +27,7 @@ class TokenRevokedError(TokenVerificationError):
 
 class InvalidTokenError(TokenVerificationError):
     """Не соответствие типа токена"""
+
+
+class PayloadError(AuthError):
+    """Ошибка обработки payload"""
