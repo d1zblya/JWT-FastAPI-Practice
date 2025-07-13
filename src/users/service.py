@@ -1,15 +1,14 @@
 from uuid import UUID
 
 from loguru import logger
-from sqlalchemy.exc import SQLAlchemyError
 
 from src.auth import utils as auth_utils
 from src.database.session import async_session_maker
-from src.exceptions.dao import CannotAddError
 from src.exceptions.user import UserAlreadyExists, UserNotFound, UserCannotUpdate, UserCannotDelete, \
-    InvalidPasswordOrUsername
+    InvalidPasswordOrUsername, UserCannotAdd
 from src.users.dao import UserDAO
-from src.users.schemas import UserCreate, UserUpdate, UserInDB, UserLogin
+from src.users.schemas import UserCreate, UserUpdate, UserInDB
+from src.users.utils import try_find_user
 
 
 class UserService:
@@ -22,43 +21,41 @@ class UserService:
                 logger.error(msg)
                 raise UserAlreadyExists(msg)
 
-            user_data = user.model_dump(exclude={"password"})
-            hashed_password = auth_utils.hash_password(user.password)
-            user_data["hashed_password"] = hashed_password
+            try:
+                user_data = user.model_dump(exclude={"password"})
+                hashed_password = auth_utils.hash_password(user.password)
+                user_data["hashed_password"] = hashed_password
 
-            new_user = await UserDAO.add(session=session, obj_in=user_data)
-            await session.commit()
+                new_user = await UserDAO.add(session=session, obj_in=user_data)
+                await session.commit()
 
-            return new_user
+                return new_user
+            except Exception as e:
+                session.rollback()
+                msg = f"Error adding user, email - {user.email}"
+                logger.error(msg)
+                raise UserCannotAdd(msg)
 
     @classmethod
-    async def get_user(cls, user_id: UUID) -> UserInDB:
+    async def get_user_by_user_id(cls, user_id: UUID) -> UserInDB:
         async with async_session_maker() as session:
-            user = await UserDAO.find_one_or_none(session=session, id=user_id)
-            if user is None:
-                msg = f"User with id - {user_id} does not exist"
-                logger.error(msg)
-                raise UserNotFound(msg)
-            return user
+            existing_user = await try_find_user(session=session, user_id=user_id)
+            return existing_user
 
     @classmethod
     async def get_user_by_email(cls, email: str) -> UserInDB:
         async with async_session_maker() as session:
-            user = await UserDAO.find_one_or_none(session=session, email=email)
-            if user is None:
+            existing_user = await UserDAO.find_one_or_none(session=session, email=email)
+            if existing_user is None:
                 msg = f"User with email - {email} does not exist"
                 logger.error(msg)
                 raise UserNotFound(msg)
-            return user
+            return existing_user
 
     @classmethod
     async def update_user(cls, user_id: UUID, user: UserUpdate) -> UserInDB:
         async with async_session_maker() as session:
-            existing_user = await UserDAO.find_one_or_none(session=session, id=user_id)
-            if existing_user is None:
-                msg = f"User with id - {user_id} does not exist"
-                logger.error(msg)
-                raise UserNotFound(msg)
+            await try_find_user(session=session, user_id=user_id)
 
             update_data = user.model_dump(exclude_unset=True)
 
@@ -67,28 +64,26 @@ class UserService:
 
             try:
                 new_user = await UserDAO.update(
-                    session=session,
-                    *[UserDAO.model.id == user_id],
+                    session,
+                    UserDAO.model.id == user_id,
                     obj_in=update_data
                 )
                 await session.commit()
                 return new_user
             except Exception as e:
-                msg = f"Error with update user (id - {user_id}): {e}"
+                msg = f"Error updating user (id - {user_id}): {e}"
                 logger.error(msg)
                 raise UserCannotUpdate(msg)
 
     @classmethod
     async def delete_user(cls, user_id: UUID) -> None:
         async with async_session_maker() as session:
-            user = await UserDAO.find_one_or_none(session=session, id=user_id)
-            if user is None:
-                raise UserNotFound(f"User with id - {user_id} does not exist")
+            await try_find_user(session=session, user_id=user_id)
             try:
                 await UserDAO.delete(session=session, id=user_id)
                 await session.commit()
             except Exception as e:
-                msg = f"Error with delete user (id - {user_id}): {e}"
+                msg = f"Error deleting user (id - {user_id}): {e}"
                 logger.error(msg)
                 raise UserCannotDelete(msg)
 
@@ -96,7 +91,6 @@ class UserService:
     async def authenticate_user(cls, email: str, password: str) -> UserInDB:
         async with async_session_maker() as session:
             user = await UserDAO.find_one_or_none(session=session, email=email)
-
             if user is None:
                 msg = f"User with email - {email} does not exist"
                 logger.error(msg)

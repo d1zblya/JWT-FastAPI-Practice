@@ -28,7 +28,6 @@ class UserBase(BaseModel):
     @classmethod
     def validate_phone(cls, v):
         if v is not None:
-            # Простая валидация для международного формата
             if not re.match(r'^\+?[1-9]\d{1,14}$', v):
                 raise ValueError('Некорректный формат телефона')
         return v
@@ -127,6 +126,3 @@ class UserInDB(UserOut):
     def to_public(self) -> UserOut:
         return UserOut.model_validate(self)
 
-####################
-# Business Schemas #
-####################

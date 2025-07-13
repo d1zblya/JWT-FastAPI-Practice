@@ -8,7 +8,7 @@ from src.users.schemas import UserOut
 
 router = APIRouter(
     prefix="/api/users",
-    tags=["Users"],
+    tags=["users"],
 )
 
 
