@@ -1,4 +1,4 @@
-from src.exceptions.dao import CannotAddError, CannotDeleteError, CannotUpdateError, NotFoundError
+from src.exceptions.dao import CannotAddError, CannotDeleteError, CannotUpdateError, NotFoundError, AlreadyExistsError
 
 
 class CannotAddBusinessProfile(CannotAddError):
@@ -17,5 +17,5 @@ class CannotDeleteBusinessProfile(CannotDeleteError):
     pass
 
 
-class UserAlreadyHasBusinessProfile(CannotAddError):
+class UserAlreadyHasBusinessProfile(AlreadyExistsError):
     pass
