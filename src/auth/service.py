@@ -1,6 +1,7 @@
 import uuid
 from datetime import timedelta, datetime, timezone
 from typing import Dict, Any
+from loguru import logger
 
 import jwt
 from fastapi import HTTPException, status, Response
@@ -138,7 +139,8 @@ class AuthService:
     @classmethod
     async def register(cls, user: UserCreate) -> dict | None:
         try:
-            await UserService.create_user(user)
+            new_user = await UserService.create_user(user)
+            logger.debug(f"User with ID: {new_user.id} created successfully")
             return {"message": "User created successfully"}
         except UserAlreadyExists:
             raise HTTPException(
@@ -239,6 +241,7 @@ class RefreshTokenService:
             token = await RefreshTokenDAO.find_one_or_none(session=session, jti=jti)
             if token is None:
                 raise CannotFindRefreshToken(f"Cannot find token")
+            logger.debug(f"Token with ID: {jti} found successfully")
             return token
 
     @staticmethod
@@ -247,8 +250,10 @@ class RefreshTokenService:
             try:
                 new_token = await RefreshTokenDAO.add(session=session, obj_in=token_data)
                 await session.commit()
+                logger.debug(f"Refresh token with ID: {new_token.jti} created successfully")
                 return new_token
             except Exception as e:
+                await session.rollback()
                 raise CannotAddRefreshToken(f"Cannot add refresh token: {e}")
 
     @staticmethod
@@ -257,5 +262,7 @@ class RefreshTokenService:
             try:
                 await RefreshTokenDAO.delete(session=session, jti=jti)
                 await session.commit()
+                logger.debug(f"Refresh token with ID: {jti} deleted successfully")
             except Exception as e:
+                await session.rollback()
                 raise CannotDeleteRefreshToken(f"Cannot delete refreash token: {e}")

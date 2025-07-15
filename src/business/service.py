@@ -23,11 +23,12 @@ class BusinessProfileService:
                 logger.error(msg)
                 raise UserAlreadyHasBusinessProfile(msg)
             try:
-                business_profile = await BusinessProfileDAO.add(session=session, obj_in=business_profile)
-                session.commit()
-                return business_profile
+                business_profile_db = await BusinessProfileDAO.add(session=session, obj_in=business_profile)
+                await session.commit()
+                logger.debug(f"Created business profile: {business_profile_db.id}")
+                return business_profile_db
             except Exception as e:
-                session.rollback()
+                await session.rollback()
                 msg = f"Error adding business profile: {e}"
                 logger.error(msg)
                 raise CannotAddBusinessProfile(msg)
@@ -48,13 +49,14 @@ class BusinessProfileService:
             try:
                 new_business_profile = await BusinessProfileDAO.update(
                     session,
-                    BusinessProfileDAO.model.id == business_id,
+                    business_id,
                     obj_in=update_data
                 )
-                session.commit()
+                await session.commit()
+                logger.debug(f"Updated business profile: {new_business_profile.id}")
                 return new_business_profile
             except Exception as e:
-                session.rollback()
+                await session.rollback()
                 msg = f"Error updating business profile (business_id - {business_id}): {e}"
                 logger.error(msg)
                 raise CannotUpdateBusinessProfile(msg)
@@ -66,9 +68,10 @@ class BusinessProfileService:
 
             try:
                 await BusinessProfileDAO.delete(session=session, id=business_id)
-                session.commit()
+                logger.debug(f"Deleted business profile: {business_id}")
+                await session.commit()
             except Exception as e:
-                session.rollback()
+                await session.rollback()
                 msg = f"Error deleting business profile (business_id - {business_id}): {e}"
                 logger.error(msg)
                 raise CannotDeleteBusinessProfile(msg)

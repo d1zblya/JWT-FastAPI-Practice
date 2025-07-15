@@ -65,12 +65,13 @@ class UserService:
             try:
                 new_user = await UserDAO.update(
                     session,
-                    UserDAO.model.id == user_id,
+                    user_id,
                     obj_in=update_data
                 )
                 await session.commit()
                 return new_user
             except Exception as e:
+                await session.rollback()
                 msg = f"Error updating user (id - {user_id}): {e}"
                 logger.error(msg)
                 raise UserCannotUpdate(msg)
@@ -83,6 +84,7 @@ class UserService:
                 await UserDAO.delete(session=session, id=user_id)
                 await session.commit()
             except Exception as e:
+                await session.rollback()
                 msg = f"Error deleting user (id - {user_id}): {e}"
                 logger.error(msg)
                 raise UserCannotDelete(msg)
