@@ -10,7 +10,7 @@ from src.auth import utils as auth_utils
 from src.auth.schemas import TokenFields
 from src.exceptions.auth import PayloadError
 from src.exceptions.user import UserNotFound
-from src.users.schemas import UserOut
+from src.users.schemas import UserOut, UserRole
 from src.users.service import UserService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -19,8 +19,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserOut:
     try:
         payload = auth_utils.decode_jwt(token)
-        user_id = uuid.UUID(payload.get(TokenFields.TOKEN_SUB_FIELD.value))
-        if user_id is None:
+        user_id_raw = payload.get(TokenFields.TOKEN_SUB_FIELD.value)
+        if user_id_raw is None:
             msg = f"user_id not found in the payload"
             logger.error(msg)
             raise PayloadError(msg)
@@ -32,6 +32,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    user_id = uuid.UUID(user_id_raw)
     user = await UserService.get_user_by_user_id(user_id)
     if user is None:
         msg = f"User not found"
@@ -39,3 +40,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
         raise UserNotFound(msg)
 
     return UserOut.model_validate(user)
+
+
+async def get_current_business_user(user: Annotated[UserOut, Depends(get_current_user)]) -> UserOut:
+    if user.role == UserRole.USER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+    return user
