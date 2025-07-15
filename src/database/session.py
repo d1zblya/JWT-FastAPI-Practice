@@ -1,4 +1,6 @@
+from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import AsyncGenerator
 
 from sqlalchemy import TIMESTAMP, func
 from sqlalchemy.ext.asyncio import (
@@ -17,13 +19,8 @@ async_session_maker = async_sessionmaker(
 )
 
 
-async def get_async_session() -> AsyncSession:
-    """
-    Получить асинхронную сессию базы данных.
-
-    Yields:
-        AsyncSession: Сессия базы данных
-    """
+@asynccontextmanager
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         try:
             yield session

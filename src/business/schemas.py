@@ -19,7 +19,8 @@ class BusinessProfileBase(BaseModel):
 
 
 class BusinessProfileCreate(BusinessProfileBase):
-    user_id: uuid.UUID = Field(..., description="ID пользователя (владельца профиля)")
+    # user_id: uuid.UUID = Field(..., description="ID пользователя (владельца профиля)")
+    pass
 
 
 class BusinessProfileUpdate(BusinessProfileBase):

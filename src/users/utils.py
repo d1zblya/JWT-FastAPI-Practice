@@ -11,7 +11,7 @@ from src.users.schemas import UserInDB
 async def try_find_user(session: AsyncSession, user_id: uuid.UUID) -> UserInDB:
     existing_user = await UserDAO.find_one_or_none(session=session, id=user_id)
     if existing_user is None:
-        msg = f"User with id - {user_id} does not exist"
+        msg = f"User with id - {user_id} not found"
         logger.error(msg)
         raise UserNotFound(msg)
     return existing_user

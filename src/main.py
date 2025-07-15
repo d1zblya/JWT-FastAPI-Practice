@@ -8,7 +8,7 @@ from src.core.config import settings
 from src.core.exception_handlers import add_exception_handlers
 from src.users.router import router as user_router
 
-app = FastAPI(name="JWTAuthFastAPI", version="0.0.1")
+app: FastAPI = FastAPI(name="JWTAuthFastAPI", version="0.0.1")
 
 app.include_router(user_router)
 app.include_router(auth_router)

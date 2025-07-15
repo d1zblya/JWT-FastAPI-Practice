@@ -19,3 +19,7 @@ class CannotDeleteBusinessProfile(CannotDeleteError):
 
 class UserAlreadyHasBusinessProfile(AlreadyExistsError):
     pass
+
+
+class UserHasNotBusinessProfile(NotFoundError):
+    pass
