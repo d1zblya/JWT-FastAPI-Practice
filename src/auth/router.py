@@ -18,16 +18,16 @@ async def register_user(user: UserCreate):
     return await AuthService.register(user)
 
 
-@router.post("/login")
+@router.post("/login", response_model=TokenResponse)
 async def login_user(
         user: Annotated[OAuth2PasswordRequestForm, Depends()],
         response: Response
-) -> TokenResponse:
+):
     return await AuthService.login(user=user, response=response)
 
 
-@router.post("/refresh")
-async def refresh_access_token(refresh_token: str = Cookie(None)) -> TokenResponse:
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_access_token(refresh_token: str = Cookie(None)):
     if refresh_token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

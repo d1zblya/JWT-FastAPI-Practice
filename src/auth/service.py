@@ -105,10 +105,10 @@ class TokenService:
 
             # Для refresh токена проверяем, что он не отозван
             if expected_type == TokenTypes.REFRESH_TOKEN_TYPE:
-                jti = payload.get(TokenFields.TOKEN_JTI_FIELD.value)
+                jti = payload.get(TokenFields.TOKEN_JTI_FIELD.value, None)
                 async with async_session_maker() as session:
                     token_record = await RefreshTokenDAO.find_one_or_none(session=session, jti=jti)
-                    if not jti or token_record is None:
+                    if jti is None or token_record is None:
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Refresh token has been revoked"

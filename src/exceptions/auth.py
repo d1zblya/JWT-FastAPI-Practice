@@ -39,3 +39,7 @@ class InvalidTokenError(TokenVerificationError):
 class PayloadError(AuthError):
     """Ошибка обработки payload"""
     status_code = 400
+
+
+class NotEnoughPermissions(AppError):
+    status_code = 403

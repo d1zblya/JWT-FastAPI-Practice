@@ -13,7 +13,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def encode_jwt(
         payload: dict,
-        private_key: str = settings.auth.PRIVATE_KEY_PATH.read_text(),
+        private_key: str = settings.auth.private_key,
         algorithm: str = settings.auth.ALGORITHM,
         expire_minutes: int = settings.auth.ACCESS_TOKEN_EXPIRE_MINUTES,
         expire_timedelta: timedelta | None = None,
@@ -44,7 +44,7 @@ def encode_jwt(
 
 def decode_jwt(
         token: str | bytes,
-        public_key: str = settings.auth.PUBLIC_KEY_PATH.read_text(),
+        public_key: str = settings.auth.public_key,
         algorithm: str = settings.auth.ALGORITHM,
 ) -> dict:
     decoded = jwt.decode(
