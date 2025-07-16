@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import utils as auth_utils
 from src.business.dao import BusinessProfileDAO
 from src.business.schemas import BusinessProfileInDB
-from src.database.session import async_session_maker
 from src.exceptions.business_profile import UserHasNotBusinessProfile
 from src.exceptions.user import UserAlreadyExists, UserNotFound, UserCannotUpdate, UserCannotDelete, \
     InvalidPasswordOrUsername, UserCannotAdd
@@ -48,7 +47,7 @@ class UserService:
     async def get_user_by_email(cls, email: str, session: AsyncSession) -> UserInDB:
         existing_user = await UserDAO.find_one_or_none(session=session, email=email)
         if existing_user is None:
-            msg = f"User with email - {email} does not exist"
+            msg = f"User with email - {email} not found"
             logger.error(msg)
             raise UserNotFound(msg)
         return existing_user

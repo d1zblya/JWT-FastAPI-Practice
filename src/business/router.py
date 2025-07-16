@@ -43,7 +43,7 @@ async def create_business(
     )
 
 
-@router.put("/{business_id}", response_model=BusinessProfileOut)
+@router.put("/{business_id}", response_model=BusinessProfileOut, response_model_exclude_unset=True)
 async def update_business(
         business_id: uuid.UUID,
         business_profile: BusinessProfileUpdate,
