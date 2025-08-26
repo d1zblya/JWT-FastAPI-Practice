@@ -13,6 +13,7 @@
 - Файл `.env` с настройками БД и другими переменными
 
 ---
+
 ## Генерация RSA ключей
 
 Для работы JWT аутентификации необходима пара RSA ключей — приватный и публичный.
@@ -23,6 +24,7 @@
 # Сгенерировать приватный RSA ключ размером 2048 бит
 openssl genrsa -out jwt-private.pem 2048
 ```
+
 ```bash
 # Извлечь публичный ключ из приватного
 openssl rsa -in jwt-private.pem -outform PEM -pubout -out jwt-public.pem
@@ -51,7 +53,9 @@ POSTGRES_DB=postgres
 
 3. Помести сертификаты в папку certs/
 4. Запусти сервисы через Docker Compose:
+
 ```bash
 docker-compose up --build
 ```
+
 5. Открой http://localhost:8000/docs — Swagger UI твоего API.

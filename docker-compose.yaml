@@ -1,11 +1,11 @@
-#version: '3.8'
+version: '3.8'
 
 services:
   db:
-    image: postgres:16
-    restart: always
+    image: postgres:17-alpine
+    restart: unless-stopped
     ports:
-      - "5433:${POSTGRES_PORT}"
+      - "${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}"
     env_file:
       - .env
     environment:
@@ -33,7 +33,7 @@ services:
       - ./src:/app/src
       - ./certs:/app/certs
       - ./migrations:/app/migrations
-    restart: always
+    restart: unless-stopped
 
 volumes:
   pg_data:

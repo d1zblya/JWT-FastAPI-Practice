@@ -1,5 +1,5 @@
 #!/bin/sh
-export PYTHONPATH="/app"
+#export PYTHONPATH="/app"
 
 echo "Let the DB start"
 python ./src/backend_pre_start.py

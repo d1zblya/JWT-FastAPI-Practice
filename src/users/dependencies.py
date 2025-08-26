@@ -5,9 +5,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import utils as auth_utils
 from src.auth.schemas import TokenFields
+from src.database.session import get_session
 from src.exceptions.auth import PayloadError
 from src.exceptions.user import UserNotFound
 from src.users.schemas import UserOut, UserRole
@@ -16,7 +18,10 @@ from src.users.service import UserService
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserOut:
+async def get_current_user(
+        token: Annotated[str, Depends(oauth2_scheme)],
+        session: Annotated[AsyncSession, Depends(get_session)]
+) -> UserOut:
     try:
         payload = auth_utils.decode_jwt(token)
         user_id_raw = payload.get(TokenFields.TOKEN_SUB_FIELD.value)
@@ -33,7 +38,10 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
         )
 
     user_id = uuid.UUID(user_id_raw)
-    user = await UserService.get_user_by_user_id(user_id)
+    user = await UserService.get_user_by_user_id(
+        user_id=user_id,
+        session=session
+    )
     if user is None:
         msg = f"User not found"
         logger.error(msg)

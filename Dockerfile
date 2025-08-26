@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONPATH=/app
 
-COPY requirements.txt .
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./src /app/src
@@ -14,4 +14,4 @@ RUN chmod +x /app/prestart.sh
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/prestart.sh"]
+CMD ["./prestart.sh"]
