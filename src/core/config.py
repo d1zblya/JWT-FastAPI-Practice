@@ -17,6 +17,8 @@ class DBSettings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
 
+    TEST_DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
+
     @property
     def database_url(self):
         return (f"postgresql+asyncpg://"

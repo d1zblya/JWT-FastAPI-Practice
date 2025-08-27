@@ -29,6 +29,7 @@ class TokenService:
             expire_timedelta: timedelta = None,
             jti: str | None = None,
     ) -> str:
+        """Общая функция создания токена"""
         jwt_payload = {TokenFields.TOKEN_TYPE_FIELD.value: token_type}
         jwt_payload.update(token_data)
         return auth_utils.encode_jwt(
@@ -79,6 +80,7 @@ class TokenService:
 
     @classmethod
     async def create_pair_tokens(cls, user_id: str, user_role: UserRole, session: AsyncSession) -> TokensInfo:
+        """Создание пары токенов, access и refresh"""
         access_token = await cls.create_access_token(
             UserJWTAccessData(
                 id=str(user_id),
@@ -94,8 +96,11 @@ class TokenService:
         return TokensInfo(access_token=access_token, refresh_token=refresh_token)
 
     @classmethod
-    async def verify_token(cls, token: str,
-                           expected_type: TokenTypes = TokenTypes.ACCESS_TOKEN_TYPE) -> Dict[str, Any]:
+    async def verify_token(
+            cls,
+            token: str,
+            expected_type: TokenTypes = TokenTypes.ACCESS_TOKEN_TYPE
+    ) -> Dict[str, Any]:
         """Проверка и декодирование токена"""
         try:
             payload = auth_utils.decode_jwt(token)
@@ -154,17 +159,22 @@ class AuthService:
                 detail="User already exists"
             )
         except Exception as e:
-            logger.error(f"ERROR: {e}")
+            logger.error(f"Error with register: {e}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Registration failed"
             )
 
     @classmethod
-    async def login(cls, user: OAuth2PasswordRequestForm, response: Response, session: AsyncSession) -> TokenResponse:
+    async def login(
+            cls,
+            user: OAuth2PasswordRequestForm,
+            response: Response,
+            session: AsyncSession
+    ) -> TokenResponse:
         try:
             user_db = await UserService.authenticate_user(
-                email=user.username,  # username = email
+                email=user.username,  # username = email - особенности FastAPI
                 password=user.password,
                 session=session
             )
@@ -234,6 +244,7 @@ class AuthService:
                 detail="Invalid token format"
             )
         except Exception as e:
+            logger.error(f"Error with logout: {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired refresh token",
