@@ -3,7 +3,7 @@ from loguru import logger
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.exceptions.user import UserNotFound
+from src.exceptions.exception_user import UserNotFound
 from src.users.dao import UserDAO
 from src.users.schemas import UserInDB
 

@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import utils as auth_utils
 from src.business.dao import BusinessProfileDAO
 from src.business.schemas import BusinessProfileInDB
-from src.exceptions.business_profile import UserHasNotBusinessProfile
-from src.exceptions.user import UserAlreadyExists, UserNotFound, UserCannotUpdate, UserCannotDelete, \
+from src.exceptions.exception_business import UserHasNotBusinessProfile
+from src.exceptions.exception_user import UserAlreadyExists, UserNotFound, UserCannotUpdate, UserCannotDelete, \
     InvalidPasswordOrUsername, UserCannotAdd
 from src.users.dao import UserDAO
 from src.users.schemas import UserCreate, UserUpdate, UserInDB

@@ -13,8 +13,8 @@ from src.auth.dao import RefreshTokenDAO
 from src.auth.schemas import TokenFields, TokenTypes, RefreshTokenSchema, TokenResponse, TokensInfo
 from src.core.config import settings
 from src.database.session import async_session_maker
-from src.exceptions.token import CannotAddRefreshToken, CannotFindRefreshToken, CannotDeleteRefreshToken
-from src.exceptions.user import UserAlreadyExists, UserNotFound, InvalidPasswordOrUsername
+from src.exceptions.exception_token import CannotAddRefreshToken, CannotFindRefreshToken, CannotDeleteRefreshToken
+from src.exceptions.exception_user import UserAlreadyExists, UserNotFound, InvalidPasswordOrUsername
 from src.users.schemas import UserJWTRefreshData, UserJWTAccessData, UserCreate, UserRole
 from src.users.service import UserService
 

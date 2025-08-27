@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.business.dao import BusinessProfileDAO
 from src.business.schemas import BusinessProfileInDB, BusinessProfileUpdate, BusinessProfileCreate
 from src.business.utils import try_find_business_profile
-from src.exceptions.auth import NotEnoughPermissions
-from src.exceptions.business_profile import (
+from src.exceptions.exception_auth import NotEnoughPermissions
+from src.exceptions.exception_business import (
     CannotAddBusinessProfile,
     CannotUpdateBusinessProfile,
     CannotDeleteBusinessProfile,
