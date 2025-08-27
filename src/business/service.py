@@ -6,10 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.business.dao import BusinessProfileDAO
 from src.business.schemas import BusinessProfileInDB, BusinessProfileUpdate, BusinessProfileCreate
 from src.business.utils import try_find_business_profile
-from src.database.session import async_session_maker
 from src.exceptions.auth import NotEnoughPermissions
-from src.exceptions.business_profile import CannotAddBusinessProfile, CannotUpdateBusinessProfile, \
-    CannotDeleteBusinessProfile, UserAlreadyHasBusinessProfile
+from src.exceptions.business_profile import (
+    CannotAddBusinessProfile,
+    CannotUpdateBusinessProfile,
+    CannotDeleteBusinessProfile,
+    UserAlreadyHasBusinessProfile
+)
 
 
 class BusinessProfileService:
@@ -30,7 +33,7 @@ class BusinessProfileService:
         try:
             business_profile_db = await BusinessProfileDAO.add(session=session, obj_in=business_profile)
             await session.commit()
-            logger.debug(f"Created business profile: {business_profile_db.id}")
+            logger.info(f"Created business profile: {business_profile_db.id}")
             return business_profile_db
         except Exception as e:
             await session.rollback()
@@ -48,7 +51,9 @@ class BusinessProfileService:
         business_profile = await try_find_business_profile(session=session, business_id=business_id)
 
         if business_profile.user_id != user_id:
-            raise NotEnoughPermissions("Not enough permissions to get this business profile")
+            msg = "Not enough permissions to get this business profile"
+            logger.error(msg)
+            raise NotEnoughPermissions(msg)
 
         return business_profile
 
@@ -63,7 +68,8 @@ class BusinessProfileService:
         existing_profile = await try_find_business_profile(session=session, business_id=business_id)
 
         if existing_profile.user_id != user_id:
-            raise NotEnoughPermissions("Not enough permissions to update this business profile")
+            msg = "Not enough permissions to update this business profile"
+            raise NotEnoughPermissions(msg)
 
         update_data = business_profile.model_dump(exclude_unset=True)
         try:
@@ -73,7 +79,7 @@ class BusinessProfileService:
                 obj_in=update_data
             )
             await session.commit()
-            logger.debug(f"Updated business profile: {new_business_profile.id}")
+            logger.info(f"Updated business profile: {new_business_profile.id}")
             return new_business_profile
         except Exception as e:
             await session.rollback()
@@ -91,11 +97,13 @@ class BusinessProfileService:
         existing_profile = await try_find_business_profile(session=session, business_id=business_id)
 
         if existing_profile.user_id != user_id:
+            msg = "Not enough permissions to delete this business profile"
+            logger.error(msg)
             raise NotEnoughPermissions("Not enough permissions to delete this business profile")
 
         try:
             await BusinessProfileDAO.delete(session=session, id=business_id)
-            logger.debug(f"Deleted business profile: {business_id}")
+            logger.info(f"Deleted business profile: {business_id}")
             await session.commit()
         except Exception as e:
             await session.rollback()

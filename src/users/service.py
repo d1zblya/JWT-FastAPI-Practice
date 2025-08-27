@@ -31,6 +31,8 @@ class UserService:
             new_user = await UserDAO.add(session=session, obj_in=user_data)
             await session.commit()
 
+            logger.info(f"User successfully created: ID - {new_user.id}")
+
             return new_user
         except Exception as e:
             await session.rollback()
@@ -68,6 +70,9 @@ class UserService:
                 obj_in=update_data
             )
             await session.commit()
+
+            logger.info(f"User successfully updated: ID - {new_user.id}")
+
             return new_user
         except Exception as e:
             await session.rollback()
@@ -81,6 +86,8 @@ class UserService:
         try:
             await UserDAO.delete(session=session, id=user_id)
             await session.commit()
+
+            logger.info(f"User successfully deleted")
         except Exception as e:
             await session.rollback()
             msg = f"Error deleting user (id - {user_id}): {e}"

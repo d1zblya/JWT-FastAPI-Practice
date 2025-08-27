@@ -151,12 +151,14 @@ class AuthService:
                 user=user,
                 session=session
             )
-            logger.debug(f"User with ID: {new_user.id} created successfully")
+            logger.info(f"User with ID: {new_user.id} created successfully")
             return {"message": "User created successfully"}
         except UserAlreadyExists:
+            msg = "User already exists"
+            logger.error(msg)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="User already exists"
+                detail=msg
             )
         except Exception as e:
             logger.error(f"Error with register: {e}")
@@ -174,19 +176,23 @@ class AuthService:
     ) -> TokenResponse:
         try:
             user_db = await UserService.authenticate_user(
-                email=user.username,  # username = email - особенности FastAPI
+                email=user.username,  # username = email - особенности OAuth2
                 password=user.password,
                 session=session
             )
         except UserNotFound:
+            msg = "User not found"
+            logger.error(msg)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                detail=msg
             )
         except InvalidPasswordOrUsername:
+            msg = "Incorrect username or password"
+            logger.error(msg)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
+                detail=msg,
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -220,9 +226,11 @@ class AuthService:
         user_db = await UserService.get_user_by_user_id(user_id=uuid.UUID(user_id), session=session)
 
         if user_db is None:
+            msg = "Invalid refresh token payload"
+            logger.error(msg)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token payload"
+                detail=msg
             )
 
         user_jwt_data = UserJWTAccessData(id=user_id, role=UserRole(user_db.role))
@@ -238,7 +246,7 @@ class AuthService:
             token = await RefreshTokenService.get_refresh_token_by_jti(jti=jti, session=session)
             if jti and token:
                 await RefreshTokenService.delete_refresh_token(jti=jti, session=session)
-        except (ValueError, jwt.PyJWTError) as e:
+        except (ValueError, jwt.PyJWTError):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token format"
@@ -265,7 +273,7 @@ class RefreshTokenService:
         token = await RefreshTokenDAO.find_one_or_none(session=session, jti=jti)
         if token is None:
             raise CannotFindRefreshToken(f"Cannot find token")
-        logger.debug(f"Token with ID: {jti} found successfully")
+        logger.info(f"Token with ID: {jti} found successfully")
         return token
 
     @staticmethod
@@ -273,18 +281,22 @@ class RefreshTokenService:
         try:
             new_token = await RefreshTokenDAO.add(session=session, obj_in=token_data)
             await session.commit()
-            logger.debug(f"Refresh token with ID: {new_token.jti} created successfully")
+            logger.info(f"Refresh token with ID: {new_token.jti} created successfully")
             return new_token
         except Exception as e:
             await session.rollback()
-            raise CannotAddRefreshToken(f"Cannot add refresh token: {e}")
+            msg = f"Cannot add refresh token: {e}"
+            logger.error(msg)
+            raise CannotAddRefreshToken(msg)
 
     @staticmethod
     async def delete_refresh_token(jti: uuid.UUID, session: AsyncSession) -> None:
         try:
             await RefreshTokenDAO.delete(session=session, jti=jti)
             await session.commit()
-            logger.debug(f"Refresh token with ID: {jti} deleted successfully")
+            logger.info(f"Refresh token with ID: {jti} deleted successfully")
         except Exception as e:
             await session.rollback()
-            raise CannotDeleteRefreshToken(f"Cannot delete refreash token: {e}")
+            msg = f"Cannot delete refreash token: {e}"
+            logger.error(msg)
+            raise CannotDeleteRefreshToken(msg)
