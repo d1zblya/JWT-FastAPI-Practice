@@ -1,4 +1,4 @@
-from src.exceptions.dao import CannotDeleteError, NotFoundError, CannotAddError
+from src.exceptions.exception_dao import CannotDeleteError, NotFoundError, CannotAddError
 
 
 class CannotAddRefreshToken(CannotAddError):

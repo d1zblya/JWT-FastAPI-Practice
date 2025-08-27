@@ -1,4 +1,4 @@
-from src.exceptions.dao import AlreadyExistsError, NotFoundError, CannotUpdateError, CannotDeleteError, \
+from src.exceptions.exception_dao import AlreadyExistsError, NotFoundError, CannotUpdateError, CannotDeleteError, \
     InvalidCredentialsError, CannotAddError
 
 
