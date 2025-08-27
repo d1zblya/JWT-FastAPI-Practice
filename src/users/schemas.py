@@ -18,7 +18,12 @@ class UserRole(str, Enum):
 # Общая база (без id, пароля и дат)
 class UserBase(BaseModel):
     """Базовая модель, от которой наследуются другие (Create, Out, InDB и т.д.)"""
-    email: EmailStr = Field(..., description="Электронная почта", max_length=100, example="user@example.com")
+    email: EmailStr = Field(
+        ...,
+        description="Электронная почта",
+        max_length=100,
+        json_schema_extra={"example": "test@example.com"}
+    )
     first_name: str | None = Field(default=None, description="Имя пользователя", max_length=50)
     last_name: str | None = Field(default=None, description="Фамилия пользователя", max_length=50)
     phone: str | None = Field(default=None, description="Номер телефона", max_length=20)
@@ -66,7 +71,11 @@ class UserCreate(UserBase):
 # Модель для обновления (все поля опциональны)
 class UserUpdate(BaseModel):
     """Используется в PATCH/PUT-запросах для обновления информации о пользователе"""
-    email: EmailStr | None = Field(default=None, description="Новый email", example="user@example.com")
+    email: EmailStr | None = Field(
+        default=None,
+        description="Новый email",
+        json_schema_extra={"example": "test@example.com"}
+    )
     first_name: str | None = Field(default=None, description="Имя", max_length=50)
     last_name: str | None = Field(default=None, description="Фамилия", max_length=50)
     phone: str | None = Field(default=None, description="Телефон", max_length=20)
@@ -89,7 +98,11 @@ class UserUpdate(BaseModel):
 # Модкль для логина пользователя
 class UserLogin(BaseModel):
     """Схема для логина (аутентификации)"""
-    email: EmailStr = Field(..., description="Электронная почта", example="user@example.com")
+    email: EmailStr = Field(
+        ...,
+        description="Электронная почта",
+        json_schema_extra={"example": "test@example.com"}
+    )
     password: str = Field(..., description="Пароль")
 
 
