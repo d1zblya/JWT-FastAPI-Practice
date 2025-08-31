@@ -99,7 +99,8 @@ class TokenService:
     async def verify_token(
             cls,
             token: str,
-            expected_type: TokenTypes = TokenTypes.ACCESS_TOKEN_TYPE
+            session: AsyncSession,
+            expected_type: TokenTypes = TokenTypes.ACCESS_TOKEN_TYPE,
     ) -> Dict[str, Any]:
         """Проверка и декодирование токена"""
         try:
@@ -114,20 +115,19 @@ class TokenService:
             # Для refresh токена проверяем, что он не отозван
             if expected_type == TokenTypes.REFRESH_TOKEN_TYPE:
                 jti = payload.get(TokenFields.TOKEN_JTI_FIELD.value, None)
-                async with async_session_maker() as session:
-                    token_record = await RefreshTokenDAO.find_one_or_none(session=session, jti=jti)
-                    if token_record is None:
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Refresh token has been revoked"
-                        )
-                    if token_record.expires_at < datetime.now(timezone.utc):
-                        await RefreshTokenDAO.delete(session=session, jti=jti)
-                        await session.commit()
-                        raise HTTPException(
-                            status.HTTP_401_UNAUTHORIZED,
-                            detail="Refresh token expired"
-                        )
+                token_record = await RefreshTokenDAO.find_one_or_none(session=session, jti=uuid.UUID(jti))
+                if token_record is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Refresh token has been revoked"
+                    )
+                if token_record.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+                    await RefreshTokenDAO.delete(session=session, jti=jti)
+                    await session.commit()
+                    raise HTTPException(
+                        status.HTTP_401_UNAUTHORIZED,
+                        detail="Refresh token expired"
+                    )
 
             return payload
 
@@ -217,7 +217,8 @@ class AuthService:
     async def refresh(cls, refresh_token: str, session: AsyncSession) -> TokenResponse:
         payload = await TokenService.verify_token(
             token=refresh_token,
-            expected_type=TokenTypes.REFRESH_TOKEN_TYPE
+            expected_type=TokenTypes.REFRESH_TOKEN_TYPE,
+            session=session
         )
 
         user_id = payload.get("sub")
@@ -241,7 +242,11 @@ class AuthService:
     @classmethod
     async def logout(cls, refresh_token: str, response: Response, session: AsyncSession):
         try:
-            payload = await TokenService.verify_token(refresh_token, TokenTypes.REFRESH_TOKEN_TYPE)
+            payload = await TokenService.verify_token(
+                token=refresh_token,
+                expected_type=TokenTypes.REFRESH_TOKEN_TYPE,
+                session=session
+            )
             jti = uuid.UUID(payload.get(TokenFields.TOKEN_JTI_FIELD.value))
             token = await RefreshTokenService.get_refresh_token_by_jti(jti=jti, session=session)
             if jti and token:

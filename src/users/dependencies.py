@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import utils as auth_utils
 from src.auth.schemas import TokenFields
 from src.database.session import get_session
-from src.exceptions.auth import PayloadError
-from src.exceptions.user import UserNotFound
+from src.exceptions.exception_auth import PayloadError
+from src.exceptions.exception_user import UserNotFound
 from src.users.schemas import UserOut, UserRole
 from src.users.service import UserService
 

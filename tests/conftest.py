@@ -97,3 +97,33 @@ def user2_test_data():
         "password": "Test2Password123"
     }
     return user
+
+
+@pytest.fixture(scope="session")
+def user3_bad_test_data():
+    user = {
+        "email": "test2@gmail.com",
+        "first_name": "123Bob123",
+        "last_name": "Oleg-last-name",
+        "phone": "+78888888888",
+        "role": "business",
+        "password": "Test2Password123"
+    }
+    return user
+
+
+@pytest_asyncio.fixture(scope="function")
+async def get_access_token(client, user1_test_data):
+    await client.post("/auth/register", json=user1_test_data)
+
+    result = await client.post(
+        "/auth/login",
+        data={
+            "username": user1_test_data["email"],
+            "password": user1_test_data["password"]
+        },
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+    )
+    return result.json()["access_token"]

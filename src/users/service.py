@@ -36,7 +36,7 @@ class UserService:
             return new_user
         except Exception as e:
             await session.rollback()
-            msg = f"Error adding user, email - {user.email}"
+            msg = f"Error adding user, email - {user.email}: {e}"
             logger.error(msg)
             raise UserCannotAdd(msg)
 
